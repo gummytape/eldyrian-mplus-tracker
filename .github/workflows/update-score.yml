@@ -1,0 +1,39 @@
+name: Update Eldyrian M+ Score
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-score:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Eldyrian from Raider.IO
+        shell: bash
+        run: |
+          curl --fail --silent --show-error \
+            "https://raider.io/api/v1/characters/profile?region=us&realm=stormrage&name=Eldyrian&fields=mythic_plus_scores_by_season%3Acurrent%2Cmythic_plus_best_runs" \
+            -o score.json
+
+      - name: Commit updated score
+        shell: bash
+        run: |
+          git config user.name "Eldyrian Tracker"
+          git config user.email "actions@github.com"
+          git add score.json
+
+          if git diff --cached --quiet; then
+            echo "Score hasn't changed."
+            exit 0
+          fi
+
+          git commit -m "Update Eldyrian M+ data"
+          git push
